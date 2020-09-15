@@ -1,49 +1,56 @@
+"""
+In charge of setting timeout before calling input function, func.
+The timer can be start or cancel arbitrarily.
+Handles the timeout pattern, too.
+* Timeout pattern
+* Set the timer manually
+* Start timer
+* Cancel timer
+"""
 from threading import Event, Timer
 import time
 
 class AbstractTimeout():
-    def __init__(self):
-        pass
-    def _setEvent(self):
+    def __init__(self, func):
+        self.mFunc = func
         pass
     def _nextTime():
         pass
     def reset(self, timeout):
         pass
-    def manualReset(self, timeout):
+    def manualSet(self, timeout):
         pass
-    def fired(self):
+    def start():
+        pass
+    def cancel():
         pass
 
 class TimeoutLinear(AbstractTimeout):
-    def __init__(self, gap):
-        self.mEvent = Event()
-        self.mBasicTimeout = 1
-        self.mGap = gap
-        self.mPreviousTimeout = 1
+    _mBasicTimeout = 1
+    mGap = gap
+    mPreviousTimeout = 1
+    def __init__(self, gap, func):
+        self.mFunc = func
+        # self.mEvent = Event()
         self.reset(False)
-    def _setEvent(self):
-        self.mEvent.set()
+    # Returns the time for the next timeout
     def _nextTime(self):
         self.mPreviousTimeout += self.mGap
         return self.mPreviousTimeout
-    def reset(self, timeout):
-        try:
-            self.mTimer.cancel()
-        except:
-            pass
-        if(timeout):
-            self.mTimer = Timer(self._nextTime(), _setEvent)
+    def set(self, func, arg, hasTimeout):
+        if(hasTimeout):
+            self.mTimer = Timer(self._nextTime(), func, arg)
         else:
-            self.mPreviousTimeout = self.mBasicTimeout
+            self.mPreviousTimeout = self._mBasicTimeout
             self.mTimer = Timer(self.mBasicTimeout, self._setEvent)
         self.mTimer.start()
-    def manualReset(self, timeout):
+    def manualSet(self, func, arg, timeout):
         self.mPreviousTimeout = timeout
         self.mTimer =Timer(self.mPreviousTimeout, self._setEvent)
+    def start(self):
         self.mTimer.start()
-    def fired(self):
-        return self.mEvent.is_set()
+    def cancel(self):
+        self.mTimer.cancel()
 
 if __name__ == '__main__':
     t = TimeoutLinear(gap=2)

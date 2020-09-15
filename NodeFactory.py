@@ -1,6 +1,6 @@
 from TimeoutStrat import *
 from ConnectStrat import *
-from NetworkDelayStrat import *
+from NodeFactory import *
 
 class AbstractNodeFactory():
     def __init__(self):
