@@ -11,8 +11,7 @@ from threading import Event, Timer
 import time
 
 class AbstractTimeout():
-    def __init__(self, func):
-        self.mFunc = func
+    def __init__(self):
         pass
     def _nextTime():
         pass
@@ -27,26 +26,31 @@ class AbstractTimeout():
 
 class TimeoutLinear(AbstractTimeout):
     _mBasicTimeout = 1
-    mGap = gap
     mPreviousTimeout = 1
-    def __init__(self, gap, func):
-        self.mFunc = func
+    def __init__(self, gap):
+        print("setting linear timeout with gap = ", gap)
+        self.mGap = gap
+        self.mEvent = Event()
+        self.set(False)
         # self.mEvent = Event()
-        self.reset(False)
     # Returns the time for the next timeout
     def _nextTime(self):
         self.mPreviousTimeout += self.mGap
         return self.mPreviousTimeout
-    def set(self, func, arg, hasTimeout):
+    def _setEvent(self):
+        self.mEvent.set()
+    def set(self, hasTimeout):
+        self.mEvent.clear()
         if(hasTimeout):
-            self.mTimer = Timer(self._nextTime(), func, arg)
+            self.mTimer = Timer(self._nextTime(), self._setEvent)
         else:
             self.mPreviousTimeout = self._mBasicTimeout
-            self.mTimer = Timer(self.mBasicTimeout, self._setEvent)
-        self.mTimer.start()
+            self.mTimer = Timer(self._mBasicTimeout, self._setEvent)
     def manualSet(self, func, arg, timeout):
         self.mPreviousTimeout = timeout
         self.mTimer =Timer(self.mPreviousTimeout, self._setEvent)
+    def fired(self):
+        return self.mEvent.is_set()
     def start(self):
         self.mTimer.start()
     def cancel(self):
@@ -54,7 +58,12 @@ class TimeoutLinear(AbstractTimeout):
 
 if __name__ == '__main__':
     t = TimeoutLinear(gap=2)
-    t.reset(timeout=False)
+    t.set(False)
+    t.start()
     print(t.fired())
+    t.mTimer.join()
+    print(t.fired())
+    t.set(True)
+    t.start()
     t.mTimer.join()
     print(t.fired())
