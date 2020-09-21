@@ -17,11 +17,11 @@ class AbstractNodeFactory():
 class noDelayLinearTimeoutUniformConn(AbstractNodeFactory):
     def __init__(self, nodeID, peerSet, quorum, gap=1):
         self.mTimer = TimeoutLinear(gap)
-        self.mQuorum = FixedConn(nodeID, peerSet, quorum, NoDelay())
+        self.mConn = FixedConn(nodeID, peerSet, quorum, NoDelay())
     def createTimer(self):
         return self.mTimer
     def createConn(self):
-        return self.mQuorum
+        return self.mConn
 
 if __name__ == '__main__':
     slices = {1, 2, 3, 4}

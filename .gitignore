@@ -1,2 +1,6 @@
 .*.swp
+*.pyc
+Session.vim
 __pycache__
+Untitled.ipynb
+.ipynb_checkpoints
