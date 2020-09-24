@@ -12,8 +12,15 @@ def LegalTransformation(M):
             return False
     return True
 
-def PageRank(trustGraph, nodeCount, d = 0.85):
-    matrix = deepcopy(trustGraph)
+"""
+INPUT: Matrix M, M[i][j] > 0 if i trusts j, 0 otherwise.
+       nodeCount as the total number of nodes in the system.
+       d as the damping factor in the PageRank
+OUTPUT: Vector V representing the PageRank in percentage. sum(V) = 1.
+"""
+def PageRank(M, nodeCount, d = 0.85):
+    print("doing PageRank with", M)
+    matrix = deepcopy(M)
     for row in matrix:
         s = sum(row)
         if(s):
@@ -23,15 +30,80 @@ def PageRank(trustGraph, nodeCount, d = 0.85):
     # print(LegalTransformation(matrix.T))
     matrix = matrix.T
     w, v = LA.eig(matrix)
-    np.set_printoptions(precision=5, linewidth=225)
-    # print(v)
+    # np.set_printoptions(precision=5, linewidth=225)
     v = v[:, np.argmax(w)].real
-    v /= sum(v)
+    v /= sum(v) # 1-norm
     return v
-def NodeRank(trustGraph):
-    matrix = deepcopy(trustGraph[:, :-1])
-    threshold = trustGraph[:, -1]
-    pass
+
+"""
+INPUT: Slices same as NodeRank input, and a node v.
+OUTPUT: all the slices S containing v.
+"""
+def slicesContaining(quorum, v):
+    s = []
+    for sliceSet in quorum:
+        if(sliceSet.includes(v)):
+            s.append(sliceSet)
+    return s
+
+"""
+Algorithm: Adopt PageRank to match the NodeRank definition.
+INPUT: sliceSet Q, and the target v in Q.
+OUTPUT: A fraction number that adopts PageRank
+"""
+def adopt(Q, v):
+    adoptor = Q.mThreshold/len(Q.mSlices)
+    for s in Q.mSlices:
+        # print(type(s))
+        if(type(s) == SCPQuorum):
+            if(s.includes(v)):
+                return adopt(s, v) * adoptor
+        else:
+            if(s == v):
+                return adoptor
+    exit(-1)
+
+"""
+INPUT: List of sliceSetting quorum[v] as sliceSet of v
+OUTPUT: N*N matrix M with M[i][j] > 0 as node i trusts j
+"""
+def toMatrix(quorum):
+    print('doing toMatrix')
+    nodeCount = len(quorum)
+    M = np.zeros((nodeCount, nodeCount))
+    for i in range(nodeCount):
+        quorum[i].show(True)
+        print(quorum[i].toVector(nodeCount))
+        M[i] += quorum[i].toVector(nodeCount)
+    for i in range(nodeCount):
+        for j in range(nodeCount):
+            if M[i][j] > 0:
+                M[i][j] = 1
+    print('toMatrix result\n', M)
+    return M
+
+"""
+INPUT: List of sliceSetting defined in Quorum.py.
+       quorum[v] represents sliceSet of node v,
+       nodeCount represents total node count in the system,
+       d represents the damping factor in PageRank
+OUTPUT: Vector V representing the NodeRank in percentage. sum(V) = 1
+"""
+def NodeRank(quorum, nodeCount, d = 0.85):
+    print('doing NodeRank on')
+    for i in range(nodeCount):
+        quorum[i].show(True)
+    print('done')
+    NR = np.zeros(nodeCount)
+    PR = PageRank(toMatrix(quorum), nodeCount, d)
+    for v in range(nodeCount): # Nodes v
+        S = slicesContaining(quorum, v)
+        for Q in S: # Slice Q
+            for G in Q.allMember(nodeCount): # Nodes G
+                NR[v] += PR[G] * adopt(Q, v)
+    NR /= sum(NR) # 1-norm
+    return NR
+
 def QuorumIntersection(quorums):
     pass
 
@@ -57,23 +129,73 @@ def QuorumIntersection(quorums):
 # print(PageRank(wikiExample, 11).real)
 
 if __name__ == '__main__':
-    nodeCount = 8
-    # Case uniform connected
+    nodeCount = 10
+
+# Case uniform connected
+    # factories = []
+    # peerSet = set()
+    # for i in range(nodeCount):
+    #     peerSet.add(i)
+    # quorums = []
+    # for nodeID in range(nodeCount):
+    #     sliceSet = set()
+    #     for i in range(4):
+    #         sliceSet.add((nodeID + i) % nodeCount)
+    #     threshold = 3
+    #     quorums.append(SCPQuorum(sliceSet, threshold))
+    #     factories.append(noDelayLinearTimeoutUniformConn(
+    #         nodeID,
+    #         peerSet,
+    #         quorums[nodeID]))
+    # print(NodeRank(quorums, nodeCount))
+
+    # Case uniform nested
+    # factories = []
+    # peerSet = set()
+    # for i in range(nodeCount):
+    #     peerSet.add(i)
+    # quorums = []
+    # for nodeID in range(nodeCount):
+    #     sliceSet = set()
+    #     for i in range(4):
+    #         sliceSet.add((nodeID + i) % nodeCount)
+    #     threshold = 3
+    #     tmpQuorum = SCPQuorum(sliceSet, threshold)
+    #     sliceSet = set()
+    #     sliceSet.add(tmpQuorum)
+    #     for i in range(3):
+    #         sliceSet.add((nodeID+4+i) % nodeCount)
+    #     threshold = 3
+    #     quorums.append(SCPQuorum(sliceSet, threshold))
+    #     factories.append(noDelayLinearTimeoutUniformConn(
+    #         nodeID,
+    #         peerSet,
+    #         quorums[nodeID]))
+    # print(NodeRank(quorums, nodeCount))
+
+    # Case non-uniform
     factories = []
     peerSet = set()
-    for i in range(100):
+    for i in range(nodeCount):
         peerSet.add(i)
-
-    trustGraph = np.zeros((nodeCount, nodeCount+1))
-    for nodeID in range(nodeCount):
+    quorums = []
+    for nodeID in range(nodeCount-2):
+        sliceSet = set()
         for i in range(4):
-            trustGraph[nodeID][(nodeID + i) % nodeCount] = 1
-        trustGraph[nodeID][-1] = 3
-        quorum = SCPQuorum(trustGraph[nodeID][:-1], trustGraph[nodeID][-1])
+            sliceSet.add((nodeID + i) % nodeCount)
+        threshold = 3
+        tmpQuorum = SCPQuorum(sliceSet, threshold)
+        sliceSet = set()
+        sliceSet.add(tmpQuorum)
+        for i in range(3):
+            sliceSet.add((nodeID+4+i) % nodeCount)
+        threshold = 3
+        quorums.append(SCPQuorum(sliceSet, threshold))
         factories.append(noDelayLinearTimeoutUniformConn(
             nodeID,
             peerSet,
-            quorum))
+            quorums[nodeID]))
+    quorums.append(SCPQuorum({1, 2, 3}, 3))
+    quorums.append(SCPQuorum({1, 2, 3, 4, 5, 6}, 1))
 
-    print(PageRank(trustGraph[:, :-1], nodeCount))
-    # print(NodeRank(quorums), PageRank(quorums), QuorumIntersection(quorums))
+    print(NodeRank(quorums, nodeCount))
