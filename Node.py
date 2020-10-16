@@ -52,6 +52,7 @@ class Node():
         self.mValue = self._getCandidate(hasTimeout)
         self.mTimer.set(hasTimeout)
 
+# TODO: original object modified
 if __name__ == '__main__':
     import NodeFactory
     import Quorum

@@ -1,5 +1,5 @@
 from Node import Node
-from NodeFactory import noDelayLinearTimeoutUniformConn
+from NodeFactory import *
 from Quorum import SCPQuorum
 import numpy as np
 from numpy import linalg as LA
@@ -31,6 +31,7 @@ def PageRank(M, nodeCount, d = 0.85):
     matrix = matrix.T
     w, v = LA.eig(matrix)
     # np.set_printoptions(precision=5, linewidth=225)
+    # print(matrix)
     v = v[:, np.argmax(w)].real
     v /= sum(v) # 1-norm
     return v
@@ -47,8 +48,8 @@ def slicesContaining(quorum, v):
     return s
 
 """
-Algorithm: Adopt PageRank to match the NodeRank definition.
-INPUT: sliceSet Q, and the target v in Q.
+Algorithm: Adopts PageRank to match the NodeRank definition.
+INPUT: sliceSet Q, and the target node v in Q.
 OUTPUT: A fraction number that adopts PageRank
 """
 def adopt(Q, v):
@@ -65,7 +66,7 @@ def adopt(Q, v):
 
 """
 INPUT: List of sliceSetting quorum[v] as sliceSet of v
-OUTPUT: N*N matrix M with M[i][j] > 0 as node i trusts j
+OUTPUT: N*N matrix M with M[i][j] > 0 if node i trusts j
 """
 def toMatrix(quorum):
     print('doing toMatrix')
@@ -96,6 +97,8 @@ def NodeRank(quorum, nodeCount, d = 0.85):
     print('done')
     NR = np.zeros(nodeCount)
     PR = PageRank(toMatrix(quorum), nodeCount, d)
+    print('PageRank result:')
+    print(PR)
     for v in range(nodeCount): # Nodes v
         S = slicesContaining(quorum, v)
         for Q in S: # Slice Q
@@ -131,71 +134,6 @@ def QuorumIntersection(quorums):
 if __name__ == '__main__':
     nodeCount = 10
 
-# Case uniform connected
-    # factories = []
-    # peerSet = set()
-    # for i in range(nodeCount):
-    #     peerSet.add(i)
-    # quorums = []
-    # for nodeID in range(nodeCount):
-    #     sliceSet = set()
-    #     for i in range(4):
-    #         sliceSet.add((nodeID + i) % nodeCount)
-    #     threshold = 3
-    #     quorums.append(SCPQuorum(sliceSet, threshold))
-    #     factories.append(noDelayLinearTimeoutUniformConn(
-    #         nodeID,
-    #         peerSet,
-    #         quorums[nodeID]))
-    # print(NodeRank(quorums, nodeCount))
 
-    # Case uniform nested
-    # factories = []
-    # peerSet = set()
-    # for i in range(nodeCount):
-    #     peerSet.add(i)
-    # quorums = []
-    # for nodeID in range(nodeCount):
-    #     sliceSet = set()
-    #     for i in range(4):
-    #         sliceSet.add((nodeID + i) % nodeCount)
-    #     threshold = 3
-    #     tmpQuorum = SCPQuorum(sliceSet, threshold)
-    #     sliceSet = set()
-    #     sliceSet.add(tmpQuorum)
-    #     for i in range(3):
-    #         sliceSet.add((nodeID+4+i) % nodeCount)
-    #     threshold = 3
-    #     quorums.append(SCPQuorum(sliceSet, threshold))
-    #     factories.append(noDelayLinearTimeoutUniformConn(
-    #         nodeID,
-    #         peerSet,
-    #         quorums[nodeID]))
-    # print(NodeRank(quorums, nodeCount))
-
-    # Case non-uniform
-    factories = []
-    peerSet = set()
-    for i in range(nodeCount):
-        peerSet.add(i)
-    quorums = []
-    for nodeID in range(nodeCount-2):
-        sliceSet = set()
-        for i in range(4):
-            sliceSet.add((nodeID + i) % nodeCount)
-        threshold = 3
-        tmpQuorum = SCPQuorum(sliceSet, threshold)
-        sliceSet = set()
-        sliceSet.add(tmpQuorum)
-        for i in range(3):
-            sliceSet.add((nodeID+4+i) % nodeCount)
-        threshold = 3
-        quorums.append(SCPQuorum(sliceSet, threshold))
-        factories.append(noDelayLinearTimeoutUniformConn(
-            nodeID,
-            peerSet,
-            quorums[nodeID]))
-    quorums.append(SCPQuorum({1, 2, 3}, 3))
-    quorums.append(SCPQuorum({1, 2, 3, 4, 5, 6}, 1))
 
     print(NodeRank(quorums, nodeCount))

@@ -2,7 +2,6 @@ from TimeoutStrat import *
 from ConnStrat import *
 from DelayStrat import *
 from NodeFactory import *
-from Quorum import *
 
 class AbstractNodeFactory():
     def __init__(self):
@@ -14,18 +13,16 @@ class AbstractNodeFactory():
     def createConn(self):
         pass
 
-class noDelayLinearTimeoutUniformConn(AbstractNodeFactory):
-    def __init__(self, nodeID, peerSet, quorum, gap=1):
-        self.mTimer = TimeoutLinear(gap)
-        self.mConn = FixedConn(nodeID, peerSet, quorum, NoDelay())
+class SimpleNodeFactory(AbstractNodeFactory):
+    def __init__(self, gap=1):
+        self.mGap = gap
     def createTimer(self):
-        return self.mTimer
+        return TimeoutLinear(self.mGap)
     def createConn(self):
-        return self.mConn
+        return UniformConn(NoDelay())
 
 if __name__ == '__main__':
-    slices = {1, 2, 3, 4}
-    quorum = SCPQuorum(slices, 3)
-    factory = noDelayLinearTimeoutUniformConn (1, slices, quorum)
+    factory = SimpleNodeFactory()
     t = factory.createTimer()
     c = factory.createConn()
+    factory.createDelay()

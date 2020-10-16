@@ -6,6 +6,14 @@ class Quorum():
     def includes(self, v):
         pass
 
+"""
+-----------
+SCPQuorum
+-----------
+mSlices: set<SCPQuroum || nodeID>
+mThreashold: int
+-----------
+"""
 class SCPQuorum(Quorum):
     def __init__(self, slices, threshold):
         self.mSlices = slices
@@ -20,7 +28,7 @@ class SCPQuorum(Quorum):
                     return True
         return False
     # INPUT: # of total nodes, nodeCount, in the System.
-    # OUTPUT: Set S with all the trusted nodes in the set.
+    # OUTPUT: Set S with all the trusted node.
     def allMember(self, nodeCount):
         vec = self.toVector(nodeCount)
         S = set()
@@ -57,7 +65,7 @@ class SCPQuorum(Quorum):
             ret = ret[:-2]
         except:
             pass
-        ret += ("}" + str(self.mThreshold)) 
+        ret += ("}" + str(self.mThreshold))
         if(prnt):
             print(ret)
         return ret
