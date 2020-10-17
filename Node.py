@@ -56,9 +56,13 @@ class Node():
 if __name__ == '__main__':
     import NodeFactory
     import Quorum
+    import DelayStrat
+    import ConnStrat
     nodeID = 1
     peers = {1, 2, 3, 4}
-    quorum = Quorum.SCPQuorum(peers, 3)
-    node = Node(NodeFactory.noDelayLinearTimeoutUniformConn(
-        nodeID, peers, quorum), nodeID)
+    connect = ConnStrat.UniformConn(DelayStrat.NoDelay())
+    connect.initWithPeers(peers)
+    factory = NodeFactory.SimpleNodeFactory()
+    factory.setConn(connect)
+    node = Node(factory, nodeID)
     node.run()
