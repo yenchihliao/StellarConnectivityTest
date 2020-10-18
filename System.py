@@ -1,5 +1,7 @@
-from Node import Node
+from Node import *
 from NodeFactory import *
+import DelayStrat
+import ConnStrat
 from Quorum import SCPQuorum
 import numpy as np
 from numpy import linalg as LA
@@ -19,7 +21,8 @@ INPUT: Matrix M, M[i][j] > 0 if i trusts j, 0 otherwise.
 OUTPUT: Vector V representing the PageRank in percentage. sum(V) = 1.
 """
 def PageRank(M, nodeCount, d = 0.85):
-    print("doing PageRank with", M)
+    print("doing PageRank with:")
+    print(M)
     matrix = deepcopy(M)
     for row in matrix:
         s = sum(row)
@@ -69,18 +72,18 @@ INPUT: List of sliceSetting quorum[v] as sliceSet of v
 OUTPUT: N*N matrix M with M[i][j] > 0 if node i trusts j
 """
 def toMatrix(quorum):
-    print('doing toMatrix')
+    # print('doing toMatrix')
     nodeCount = len(quorum)
     M = np.zeros((nodeCount, nodeCount))
     for i in range(nodeCount):
-        quorum[i].show(True)
-        print(quorum[i].toVector(nodeCount))
+    #     quorum[i].show(True)
+        # print(quorum[i].toVector(nodeCount))
         M[i] += quorum[i].toVector(nodeCount)
     for i in range(nodeCount):
         for j in range(nodeCount):
             if M[i][j] > 0:
                 M[i][j] = 1
-    print('toMatrix result\n', M)
+    # print('toMatrix result\n', M)
     return M
 
 """
@@ -94,7 +97,6 @@ def NodeRank(quorum, nodeCount, d = 0.85):
     print('doing NodeRank on')
     for i in range(nodeCount):
         quorum[i].show(True)
-    print('done')
     NR = np.zeros(nodeCount)
     PR = PageRank(toMatrix(quorum), nodeCount, d)
     print('PageRank result:')
@@ -105,6 +107,7 @@ def NodeRank(quorum, nodeCount, d = 0.85):
             for G in Q.allMember(nodeCount): # Nodes G
                 NR[v] += PR[G] * adopt(Q, v)
     NR /= sum(NR) # 1-norm
+    print('NodeRank result:\n', NR)
     return NR
 
 def QuorumIntersection(quorums):
@@ -132,8 +135,21 @@ def QuorumIntersection(quorums):
 # print(PageRank(wikiExample, 11).real)
 
 if __name__ == '__main__':
-    nodeCount = 10
+    # Experiment parameters
+    nodeCount = 5
+    # TODO: enable experiment duration variable instead of manually ctrl-c the program
+    # experimentTime = 100
+    factory = SimpleNodeFactory()
 
+    peers = set()
+    for i in range(nodeCount):
+        peers.add(i)
+    factory.createConn().initWithPeers(peers)
+    nodes = []
+    for nodeID in peers:
+        nodes.append(Node(factory, nodeID))
+    NodeRank(nodes[0].mConn.getQuorum(), nodeCount)
 
-
-    print(NodeRank(quorums, nodeCount))
+    for node in nodes:
+        t = Thread(target=node.run)
+        t.start()

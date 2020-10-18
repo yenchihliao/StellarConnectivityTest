@@ -42,7 +42,7 @@ class Node():
                 self.log('{} timer fired'.format(self.mNodeID))
                 self.changeView(hasTimeout=True)
                 self.mTimer.start()
-        self.log('Node duration expired')
+        self.log('Node{} duration expired'.format(self.mNodeID))
         print(self.mLog)
     def recv(self, msg):
         # if(self.mVotes[nodeID].mView >= msg.view)

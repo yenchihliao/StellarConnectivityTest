@@ -13,8 +13,6 @@ class AbstractConn():
         self.mDelay
     def _quorumGenerate(self):
         pass
-    def getQuorum(self):
-        pass
     def _send(self):
         pass
     def broadcast(self, msg):
@@ -23,6 +21,8 @@ class AbstractConn():
         pass
     def VBlocking(self):
         pass
+    def getQuorum(self):
+        return self.mQuorum
 """
 Establish a uniform connected FBAS.
 Only one instance is needed across multiple nodes.
@@ -43,9 +43,8 @@ class UniformConn(AbstractConn):
             sliceSet = set()
             for i in range(4):
                 sliceSet.add((nodeID + i) % self.mCount)
-                self.mQuorum.append(SCPQuorum(sliceSet, threshold))
-    def getQuorum(self):
-        return self.mQuorum
+            self.mQuorum.append(SCPQuorum(sliceSet, threshold))
+        print('generating quorum @ConnStrat', self.mQuorum)
     def _send(self, msg, targetID):
         sleep(self.mDelay.getDelay(targetID))
         self.mPeers[targetID].recv(self.mNodeID, msg)
