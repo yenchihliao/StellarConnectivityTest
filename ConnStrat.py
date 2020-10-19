@@ -1,5 +1,6 @@
 from Quorum import *
 from Node import *
+from math import ceil
 """
 In charge of generating peers and quorum settings,
 while handling broadcast strategy and following
@@ -17,6 +18,8 @@ class AbstractConn():
         pass
     def broadcast(self, msg):
         pass
+    def _satisfy(self, peer, agrees):
+        pass
     def ractify(self, votes, view, value):
         pass
     def VBlocking(self):
@@ -33,26 +36,46 @@ class UniformConn(AbstractConn):
     mPeers = set()
     def __init__(self, delayStrat):
         self.mDelay = delayStrat
-    def initWithPeers(self, peers):
+    # Feed in the instances of all nodes to use this class.
+    # trustRatio is the ratio of nodes trusted in the System.
+    # threshold is the ratio of a slice to the System.
+    def initWithPeers(self, peers, trustRatio, thresholdRatio):
         self.mPeers = peers
         self.mCount = len(peers)
-        self._quorumGenerate()
-    def _quorumGenerate(self):
-        threshold = 3
-        for nodeID in range(self.mCount):
+        self._quorumGenerate(trustRatio, thresholdRatio)
+    def _quorumGenerate(self, trustRatio, thresholdRatio):
+        print('generating quorum @ConnStrat')
+        threshold = ceil(self.mCount * thresholdRatio)
+        for nodeID in range(ceil(self.mCount * trustRatio)):
             sliceSet = set()
-            for i in range(4):
+            for i in range(self.mCount):
                 sliceSet.add((nodeID + i) % self.mCount)
             self.mQuorum.append(SCPQuorum(sliceSet, threshold))
-        print('generating quorum @ConnStrat', self.mQuorum)
-    def _send(self, msg, targetID):
-        sleep(self.mDelay.getDelay(targetID))
-        self.mPeers[targetID].recv(self.mNodeID, msg)
+            self.mQuorum[-1].show(True)
+    def _send(self, msg, peer):
+        sleep(self.mDelay.getDelay(peer.mNodeID))
+        peer.recv(msg)
     def broadcast(self, msg):
         for peer in self.mPeers:
             t = Thread(target=self._send, args=(msg, peer))
             t.start()
+    def _satisfy(self, peer, agrees):
+        return self.mQuorum[peer].satisfiedBy(agrees)
     def ractify(self, votes, view, value):
+        agrees = set()
+        for msg in votes.values():
+            if(msg.mView == view and msg.mVote == value):
+                agrees.add(msg.mSender)
+        changed = True
+        while(changed):
+            changed = False
+            for peer in agrees:
+                if(not self._satisfy(peer, agrees)):
+                    agrees.remove(peer)
+                    changed = True
+                    break
+        if(len(agrees) > 0):
+            return True
         return False
     def VBlocking(self):
         pass

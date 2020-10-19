@@ -1,10 +1,17 @@
 class Quorum():
     def __init__(self):
         pass
-    def toVector(self):
+    def satisfy(self, peers):
         pass
     def includes(self, v):
         pass
+    def allMember(self, nodeCount):
+        pass
+    def toVector(self):
+        pass
+    def show(self):
+        pass
+
 
 """
 -----------
@@ -18,6 +25,18 @@ class SCPQuorum(Quorum):
     def __init__(self, slices, threshold):
         self.mSlices = slices
         self.mThreshold = threshold
+    def satisfiedBy(self, peers):
+        count = 0
+        for s in self.mSlices:
+            if(type(s) == type(self)):
+                if(s.satisfiedBy(peers)):
+                    count += 1
+            else:
+                for peer in peers:
+                    if(peer == s):
+                        count += 1
+        return count >= self.mThreshold
+
     def includes(self, v):
         for s in self.mSlices:
             if(type(s) == type(self)):

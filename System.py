@@ -136,18 +136,14 @@ def QuorumIntersection(quorums):
 
 if __name__ == '__main__':
     # Experiment parameters
-    nodeCount = 5
-    # TODO: enable experiment duration variable instead of manually ctrl-c the program
-    # experimentTime = 100
+    nodeCount = 4
     factory = SimpleNodeFactory()
 
-    peers = set()
-    for i in range(nodeCount):
-        peers.add(i)
-    factory.createConn().initWithPeers(peers)
     nodes = []
-    for nodeID in peers:
+    for nodeID in range(nodeCount):
         nodes.append(Node(factory, nodeID))
+    factory.createConn().initWithPeers(nodes, 1, 0.6666)
+
     NodeRank(nodes[0].mConn.getQuorum(), nodeCount)
 
     for node in nodes:
