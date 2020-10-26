@@ -1,6 +1,7 @@
 from Quorum import *
 from Node import *
 from math import ceil
+from copy import deepcopy
 """
 In charge of generating peers and quorum settings,
 while handling broadcast strategy and following
@@ -63,7 +64,8 @@ class UniformConn(AbstractConn):
         return self.mQuorum[peer].satisfiedBy(agrees)
     def ractify(self, votes, view, value):
         agrees = set()
-        for msg in votes.values():
+        values = deepcopy(votes).values()
+        for msg in values:
             if(msg.mView == view and msg.mVote == value):
                 agrees.add(msg.mSender)
         changed = True
