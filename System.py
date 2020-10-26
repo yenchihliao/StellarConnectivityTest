@@ -142,7 +142,7 @@ if __name__ == '__main__':
     nodes = []
     for nodeID in range(nodeCount):
         nodes.append(Node(factory, nodeID))
-    factory.createConn().initWithPeers(nodes, 1, 0.6666)
+    factory.createConn().initWithPeers(nodes, 1, 0.67)
 
     NodeRank(nodes[0].mConn.getQuorum(), nodeCount)
 

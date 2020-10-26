@@ -25,9 +25,9 @@ class AbstractTimeout():
         pass
 
 class TimeoutLinear(AbstractTimeout):
-    _mBasicTimeout = 1
-    mPreviousTimeout = 1
-    def __init__(self, gap):
+    _mBasicTimeout = 0.1
+    mPreviousTimeout = 0.1
+    def __init__(self, gap = 0.1):
         # print("setting linear timeout with gap = ", gap)
         self.mGap = gap
         self.mEvent = Event()
