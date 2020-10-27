@@ -21,9 +21,9 @@ class AbstractConn():
         pass
     def _satisfy(self, peer, agrees):
         pass
-    def ractify(self, votes, view, value):
-        pass
     def VBlocking(self):
+        pass
+    def ractify(self, votes, view, value):
         pass
     def getQuorum(self):
         return self.mQuorum
@@ -60,8 +60,22 @@ class UniformConn(AbstractConn):
         for peer in self.mPeers:
             t = Thread(target=self._send, args=(msg, peer))
             t.start()
-    def _satisfy(self, peer, agrees):
-        return self.mQuorum[peer].satisfiedBy(agrees)
+    """
+    INPUT: target is nodeID, and agrees is set of nodeIDs
+    OUTPUT: True if agrees is a convincing slice for node, target.
+    """
+    def _satisfy(self, target, agrees):
+        return self.mQuorum[target].satisfiedBy(agrees)
+    """
+    INPUT: target is nodeID, and peers is set of nodeIDs.
+    OUTPUT: True if peers is a v-blocking to node, target.
+    """
+    def VBlocking(self, target, peers):
+        return self.mQuorum[target].isBlockedBy(peers)
+    """
+    INPUT: view, value, and votes which maps nodeID to their highest(view) vote.
+    OUTPUT: The set of nodeIDs ractifying value or False otherwise.
+    """
     def ractify(self, votes, view, value):
         agrees = set()
         values = deepcopy(votes).values()
@@ -77,10 +91,8 @@ class UniformConn(AbstractConn):
                     changed = True
                     break
         if(len(agrees) > 0):
-            return True
+            return agrees
         return False
-    def VBlocking(self):
-        pass
 
 class UniformConn2(UniformConn):
     def _quorumGenerate(self):

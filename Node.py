@@ -42,14 +42,11 @@ class Node():
             self.mValue = 'Node{}@({}, {})'.format(self.mNodeID, self.mHeight, self.mView)
             self.log('Got candidate from {}'.format(target))
             return True
-        print('{}acquiring in getCandidate\n'.format(self.mNodeID))
         self.mVoteLock.acquire()
         if(height >= len(self.mVotes)):
-            print('{}releasing\n'.format(self.mNodeID))
             self.mVoteLock.release()
             return False
         msg = self.mVotes[height].get(target)
-        print('{}releasing\n'.format(self.mNodeID))
         self.mVoteLock.release()
         if(msg):
             if(msg.mView == self.mView):
@@ -57,23 +54,18 @@ class Node():
                 self.log('Got candidate from {}'.format(target))
                 return True
         return False
+    # Check if Message is newer in terms of height and view.
+    # Also make sure self.mVote has enough space for the message.
     def _isNewerMsg(self, msg): # acquires lock on mVote
-        print('{}acquiring in isNewMsg\n'.format(self.mNodeID))
         self.mVoteLock.acquire()
         while(len(self.mVotes) <= msg.mHeight):
             self.mVotes.append({})
-        print('{}releasing\n'.format(self.mNodeID))
+        history = self.mVotes[msg.mHeight].get(msg.mSender)
         self.mVoteLock.release()
-        history = self.mVotes[self.mHeight].get(msg.mSender)
         if(not history):
             return True
-        if(history.mHeight < msg.mHeight):
+        if(history.mView < msg.mView):
             return True
-        elif(history.mHeight > msg.mHeight):
-            return False
-        else:
-            if(history.mView < msg.mView):
-                return True
         return False
     def run(self):
         self.log('running Node{}'.format(self.mNodeID))
@@ -86,27 +78,44 @@ class Node():
         self.mTimer.start()
         failCount = 0
         while(not self._mEventDurationExpire.is_set()):
+            # Skip heights when behind a v-blocking set
+            peers = set()
+            self.mVoteLock.acquire()
+            for h in range(len(self.mVotes)-1, self.mHeight, -1):
+                for peer in self.mVotes[h]:
+                    peers.add(peer)
+                if(self.mConn.VBlocking(self.mNodeID, peers)):
+                    self.mTimer.cancel()
+                    self.log('catching up from {} to {}'.format(self.mHeight, h))
+                    self.changeView(False)
+                    self.mHeight = h
+                    self.mTimer.start()
+                    break
+            self.mVoteLock.release()
+
+            # try to get a candidate if not
             if(self.mNoCandidate):
                 if(self._getCandidate(hasTimeout = False, height = self.mHeight)):
                     self.mNoCandidate = False
                     message = SCPMessage(self.mNodeID, self.mHeight, self.mView, self.mValue, self.mConn.getQuorum())
                     self.broadcast(message)
-            # sleep(0.5)
+
             if(not self.mTimer.fired()):
-                print('{}acquiring in run\n'.format(self.mNodeID))
                 self.mVoteLock.acquire()
                 while(len(self.mVotes) <= self.mHeight):
                     self.mVotes.append({})
-                if(self.mConn.ractify(self.mVotes[self.mHeight], self.mView, self.mValue)):
+                tmp = self.mConn.ractify(self.mVotes[self.mHeight], self.mView, self.mValue)
+                if(tmp):
                     self.mTimer.cancel()
-                    self.log('Ractified: {}'.format(self.mValue))
+                    result = ''
+                    for e in tmp:
+                        result += str(e) + ', '
+                    self.log('Ractified: {} with {}'.format(self.mValue, result))
                     self.changeView(hasTimeout=False)
                     self.mHeight += 1
                     self.mTimer.start()
-                    print('{}releasing\n'.format(self.mNodeID))
                     self.mVoteLock.release()
                     continue
-                print('{}releasing\n'.format(self.mNodeID))
                 self.mVoteLock.release()
             else:
                 self.log('timer fired')
@@ -118,7 +127,7 @@ class Node():
         print(self.mLog)
         # print('\n### Node{} log:\n{}'.format(self.mNodeID, self.mLog))
     def recv(self, msg):
-        self.log('Node{} recvs: {}'.format(self.mNodeID, msg.mVote))
+        self.log('recvs from {}: {}'.format(msg.mSender, msg.mVote))
         if(self._isNewerMsg(msg)):
             self.mVotes[msg.mHeight][msg.mSender] = msg
     def log(self, output):

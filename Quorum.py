@@ -1,7 +1,9 @@
 class Quorum():
     def __init__(self):
         pass
-    def satisfy(self, peers):
+    def satisfiedBy(self, peers):
+        pass
+    def isBlockedBy(self, peers):
         pass
     def includes(self, v):
         pass
@@ -25,6 +27,10 @@ class SCPQuorum(Quorum):
     def __init__(self, slices, threshold):
         self.mSlices = slices
         self.mThreshold = threshold
+    """
+    INPUT: peers is set of nodeIDs
+    OUTPUT: True if peers is a convincing slice
+    """
     def satisfiedBy(self, peers):
         count = 0
         for s in self.mSlices:
@@ -36,6 +42,17 @@ class SCPQuorum(Quorum):
                     if(peer == s):
                         count += 1
         return count >= self.mThreshold
+    def isBlockedBy(self, peers):
+        count = 0
+        for s in self.mSlices:
+            if(type(s) == type(self)):
+                if(s.isBlockedBy(peers)):
+                    count += 1
+            else:
+                for peer in peers:
+                    if(peer == s):
+                        count += 1
+        return count >= len(self.mSlices) - self.mThreshold + 1
 
     def includes(self, v):
         for s in self.mSlices:
