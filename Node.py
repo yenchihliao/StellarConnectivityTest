@@ -124,7 +124,9 @@ class Node():
                 self.mTimer.start()
         self.log('Node{} duration expired'.format(self.mNodeID))
         self.log('{}:{}'.format(failCount, self.mHeight))
-        print(self.mLog)
+        # print(self.mLog)
+        self.mFile.write(self.mLog)
+        self.mFile.close()
         # print('\n### Node{} log:\n{}'.format(self.mNodeID, self.mLog))
     def recv(self, msg):
         self.log('recvs from {}: {}'.format(msg.mSender, msg.mVote))
@@ -145,6 +147,42 @@ class Node():
             self.mView = 0
         self.mNoCandidate = True
         self.mTimer.set(hasTimeout)
+class NodeOneShot(Node):
+    def run(self):
+        self.log('running Node{}'.format(self.mNodeID))
+        # mTimer triggers view change when expired.
+        # The timing of starting this timer depends on the protocol.
+        self.mTimer.set(hasTimeout=False)
+        self.mTimer.start()
+        failed = False
+        # try to get a candidate if not
+        while(not self.mTimer.fired()):
+            if(self.mNoCandidate):
+                if(self._getCandidate(hasTimeout = False, height = self.mHeight)):
+                    self.mNoCandidate = False
+                    message = SCPMessage(self.mNodeID, self.mHeight, self.mView, self.mValue, self.mConn.getQuorum())
+                    self.broadcast(message)
+
+            self.mVoteLock.acquire()
+            while(len(self.mVotes) <= self.mHeight):
+                self.mVotes.append({})
+            tmp = self.mConn.ractify(self.mVotes[self.mHeight], self.mView, self.mValue)
+            if(tmp):
+                self.mTimer.cancel()
+                result = ''
+                for e in tmp:
+                    result += str(e) + ', '
+                self.log('Ractified: {} with {}'.format(self.mValue, result))
+                self.mVoteLock.release()
+                continue
+            self.mVoteLock.release()
+        else:
+            self.log('timer fired')
+        self.log('Node{} duration expired'.format(self.mNodeID))
+        self.log('{}:{}'.format(failCount, self.mHeight))
+        self.mFile.write(self.mLog)
+        self.mFile.close()
+        # print('\n### Node{} log:\n{}'.format(self.mNodeID, self.mLog))
 
 if __name__ == '__main__':
     import NodeFactory
