@@ -40,6 +40,7 @@ class UniformConn(AbstractConn):
     # Feed in the instances of all nodes to use this class.
     # trustRatio is the ratio of nodes trusted in the System.
     # threshold is the ratio of a slice to the System.
+    # "threshold" < "trustRatio"
     def initWithPeers(self, peers, trustRatio, thresholdRatio):
         self.mPeers = peers
         self.mCount = len(peers)
