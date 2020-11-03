@@ -20,11 +20,13 @@ the topology between nodes, message delay, and the
 life time of each nodes
 """
 class SimpleNodeFactory(AbstractNodeFactory):
-    def __init__(self, time = 600):
+    def __init__(self, basicTimeout = 0.2, timeoutGap = 0.2, time = 600):
         self.mConn = UniformConn(NoDelay())
         self.mTime = time
+        self.mBasic = basicTimeout
+        self.mGap = timeoutGap
     def createTimer(self):
-        return TimeoutLinear()
+        return TimeoutLinear(self.mBasic, self.mGap)
     def createConn(self):
         return self.mConn
     def createLifeTime(self):

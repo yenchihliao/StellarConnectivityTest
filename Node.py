@@ -1,3 +1,4 @@
+import random
 from threading import Timer, Event, Thread, Lock
 from time import sleep
 # from AbstractNodeFactory import *
@@ -27,12 +28,11 @@ class Node():
     """
     INPUT: hasTimeout is True if this function is called in the
             case of timeout.
-    OUTPUT: True if sucessfully found and assigned legal valeu to
+    OUTPUT: True if sucessfully found and assigned legal value to
             self.mValue, False otherwise.
     NOTE: Value is selected randomly from a peer in slice.
     """
     def _getCandidate(self, hasTimeout, height): # acquires lock on mVote
-        import random
         # nodeCount ought to be unknow variable in FBAS.
         # Used here only for convenience.
         nodeCount = len(self.mConn.getQuorum())
@@ -68,6 +68,8 @@ class Node():
             return True
         return False
     def run(self):
+        # in case node ends before others
+        sleep(0.1)
         self.log('running Node{}'.format(self.mNodeID))
         # timer stop the node when expired.(Experiment duation)
         timer = Timer(self.mDuration, self._mEventDurationExpire.set)
@@ -148,6 +150,9 @@ class Node():
         self.mNoCandidate = True
         self.mTimer.set(hasTimeout)
 class NodeOneShot(Node):
+    def __init__(self, factory, nodeID, func):
+        super().__init__(factory, nodeID)
+        self.mRecord = func
     def run(self):
         self.log('running Node{}'.format(self.mNodeID))
         # mTimer triggers view change when expired.
@@ -162,6 +167,8 @@ class NodeOneShot(Node):
                     self.mNoCandidate = False
                     message = SCPMessage(self.mNodeID, self.mHeight, self.mView, self.mValue, self.mConn.getQuorum())
                     self.broadcast(message)
+                else:
+                    continue
 
             self.mVoteLock.acquire()
             while(len(self.mVotes) <= self.mHeight):
@@ -174,14 +181,13 @@ class NodeOneShot(Node):
                     result += str(e) + ', '
                 self.log('Ractified: {} with {}'.format(self.mValue, result))
                 self.mVoteLock.release()
-                continue
+                self.mRecord()
+                self.mFile.write(self.mLog)
+                print(self.mLog)
+                return
             self.mVoteLock.release()
-        else:
-            self.log('timer fired')
-        self.log('Node{} duration expired'.format(self.mNodeID))
-        self.log('{}:{}'.format(failCount, self.mHeight))
-        self.mFile.write(self.mLog)
-        self.mFile.close()
+        self.log('timer fired')
+        print(self.mLog)
         # print('\n### Node{} log:\n{}'.format(self.mNodeID, self.mLog))
 
 if __name__ == '__main__':

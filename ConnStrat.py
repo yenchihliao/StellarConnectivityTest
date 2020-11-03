@@ -46,14 +46,14 @@ class UniformConn(AbstractConn):
         self.mCount = len(peers)
         self._quorumGenerate(trustRatio, thresholdRatio)
     def _quorumGenerate(self, trustRatio, thresholdRatio):
-        print('generating quorum @ConnStrat')
+        # print('generating quorum @ConnStrat')
         threshold = ceil(self.mCount * thresholdRatio)
         for nodeID in range(ceil(self.mCount * trustRatio)):
             sliceSet = set()
             for i in range(self.mCount):
                 sliceSet.add((nodeID + i) % self.mCount)
             self.mQuorum.append(SCPQuorum(sliceSet, threshold))
-            self.mQuorum[-1].show(True)
+            # self.mQuorum[-1].show(True)
     def _send(self, msg, peer):
         sleep(self.mDelay.getDelay(peer.mNodeID))
         peer.recv(msg)

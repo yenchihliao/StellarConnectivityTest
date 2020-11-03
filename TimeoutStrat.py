@@ -25,10 +25,10 @@ class AbstractTimeout():
         pass
 
 class TimeoutLinear(AbstractTimeout):
-    _mBasicTimeout = 0.1
-    mPreviousTimeout = 0.1
-    def __init__(self, gap = 0.1):
+    def __init__(self, basic, gap):
         # print("setting linear timeout with gap = ", gap)
+        self._mBasicTimeout = basic
+        self.mPreviousTimeout = basic
         self.mGap = gap
         self.mEvent = Event()
         self.set(False)
