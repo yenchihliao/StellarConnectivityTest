@@ -9,13 +9,15 @@ from Message import SCPMessage
 #       are delegated to other objects
 class Node():
     mView = 0
+    mVoteLock = Lock() # mutex lock for accessing mVotes
     # mVotes: List<map<nodeID, vote>>, dictionaries mapping nodeID to the vote with highest view indexed by height
-    mVoteLock = Lock()
     mVotes = [{}]
-    mNoCandidate = True
-    mValue = ""
-    mHeight = 0
-    mBlocks = []
+    mNoCandidate = True # Ture if no local candidate for current view
+    mValue = "" # The local candidate for current view
+    mHeight = 0 # success count
+    mBlocks = [] # success record
+    _mEventDurationExpire = Event() # Event for ending the node(protocol)
+    mLog = '' # Output string
     def __init__(self, factory, nodeID):
         self.mNodeID = nodeID
         self.mFile = open('node{}.txt'.format(self.mNodeID), 'w')
