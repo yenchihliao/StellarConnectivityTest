@@ -12,7 +12,6 @@ class Node():
     mVoteLock = Lock() # mutex lock for accessing mVotes
     # mVotes: List<map<nodeID, vote>>, dictionaries mapping nodeID to the vote with highest view indexed by height
     mVotes = [{}]
-    mNoCandidate = True # Ture if no local candidate for current view
     mValue = "" # The local candidate for current view
     mHeight = 0 # success count
     mBlocks = [] # success record
@@ -51,15 +50,18 @@ class Node():
         target = self._getPriority()
         self.log('Got candidate from {}'.format(target))
         self.mVoteLock.acquire()
+        print('candidate acquired')
         while(len(self.mVotes) <= height):
             self.mVotes.append({})
         msg = self.mVotes[height].get(target)
         if(msg):
             if(msg.mView == self.mView):
                 self.mValue = msg.mVote
+                print('candidate releasing')
                 self.mVoteLock.release()
                 return
         self.mValue = '{}: {}, {}->{}'.format(self.mNodeID, self.mHeight, self.mView, target)
+        print('candidate releasing')
         self.mVoteLock.release()
         return
     # Check if Message is newer in terms of height and view.
@@ -84,13 +86,15 @@ class Node():
         timer.start()
         # mTimer triggers view change when expired.
         # The timing of starting this timer depends on the protocol.
+        self._getCandidate(hasTimeout = False, height = self.mHeight)
+        message = SCPMessage(self.mNodeID, self.mHeight, self.mView, self.mValue, self.mConn.getQuorum())
+        self.broadcast(message)
         self.mTimer.set(hasTimeout=False)
         self.mTimer.start()
         failCount = 0
         while(not self._mEventDurationExpire.is_set()):
             # Skip heights when behind a v-blocking set
             peers = set()
-            self.mVoteLock.acquire()
             for h in range(len(self.mVotes)-1, self.mHeight, -1):
                 for peer in self.mVotes[h]:
                     peers.add(peer)
@@ -98,23 +102,19 @@ class Node():
                     self.mTimer.cancel()
                     self.log('catching up from {} to {}'.format(self.mHeight, h))
                     self.changeView(False)
+                    self.mVoteLock.acquire()
                     self.mHeight = h
+                    self.mVoteLock.release()
                     self.mTimer.start()
                     break
-            self.mVoteLock.release()
-
-            # try to get a candidate if not
-            if(self.mNoCandidate):
-                self._getCandidate(hasTimeout = False, height = self.mHeight)
-                self.mNoCandidate = False
-                message = SCPMessage(self.mNodeID, self.mHeight, self.mView, self.mValue, self.mConn.getQuorum())
-                self.broadcast(message)
 
             if(not self.mTimer.fired()):
                 self.mVoteLock.acquire()
                 while(len(self.mVotes) <= self.mHeight):
                     self.mVotes.append({})
+                # TODO: patch ractify with new message formation(with target)
                 tmp = self.mConn.ractify(self.mVotes[self.mHeight], self.mView, self.mValue)
+                self.mVoteLock.release()
                 if(tmp):
                     self.mTimer.cancel()
                     result = ''
@@ -122,11 +122,8 @@ class Node():
                         result += str(e) + ', '
                     self.log('Ractified: {} with {}'.format(self.mValue, result))
                     self.changeView(hasTimeout=False)
-                    self.mHeight += 1
                     self.mTimer.start()
-                    self.mVoteLock.release()
                     continue
-                self.mVoteLock.release()
             else:
                 self.log('timer fired')
                 self.changeView(hasTimeout=True)
@@ -143,19 +140,21 @@ class Node():
         if(self._isNewerMsg(msg)):
             self.mVotes[msg.mHeight][msg.mSender] = msg
     def log(self, output):
-        # print(output)
+        print(output)
         self.mLog += output
         self.mLog += "\n"
     def broadcast(self, msg):
         self.mConn.broadcast(msg)
-    # TODO: correct the false use of view(should reset when height increases)
     def changeView(self, hasTimeout):
         # self.log('calling view change @{}, hasTimeout: {}'.format(self.mView, hasTimeout))
         if(hasTimeout):
             self.mView += 1
         else:
             self.mView = 0
-        self.mNoCandidate = True
+            self.mHeight += 1
+        self._getCandidate(hasTimeout = False, height = self.mHeight)
+        message = SCPMessage(self.mNodeID, self.mHeight, self.mView, self.mValue, self.mConn.getQuorum())
+        self.broadcast(message)
         self.mTimer.set(hasTimeout)
 class NodeOneShot(Node):
     def __init__(self, factory, nodeID, func):
