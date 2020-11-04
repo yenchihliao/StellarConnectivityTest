@@ -23,37 +23,43 @@ class Node():
         self.mTimer = self.mFactory.createTimer()
         self.mConn = self.mFactory.createConn()
         self.mDuration = self.mFactory.createLifeTime()
-        self._mEventDurationExpire = Event()
-        self.mLog = ''
+    """
+    OUTPUT: Randomly selected peer from slices
+    NOTE: Invoked by _getCandidate
+    """
+    def _getPriority(self):
+        # nodeCount ought to be unknow variable in FBAS.
+        # Used here only for convenience.
+        quorum = self.mConn.getQuorum()
+        vec = quorum[self.mNodeID].toVector(len(quorum))
+        rand = random.randint(0, sum(vec) - 1)
+        for i in range(len(vec)):
+            if(rand > 0):
+                rand -= vec[i]
+            else:
+                return i
+        return len(vec)
     """
     INPUT: hasTimeout is True if this function is called in the
             case of timeout.
-    OUTPUT: True if sucessfully found and assigned legal value to
-            self.mValue, False otherwise.
-    NOTE: Value is selected randomly from a peer in slice.
+    Algorithm: Assign local mValue for later broadcast
     """
     def _getCandidate(self, hasTimeout, height): # acquires lock on mVote
-        # nodeCount ought to be unknow variable in FBAS.
-        # Used here only for convenience.
-        nodeCount = len(self.mConn.getQuorum())
-        target = random.randint(0, nodeCount - 1)
         # self.log('node{} get target {}'.format(self.mNodeID, target))
-        if(target == self.mNodeID):
-            self.mValue = 'Node{}@({}, {})'.format(self.mNodeID, self.mHeight, self.mView)
-            self.log('Got candidate from {}'.format(target))
-            return True
+        target = self._getPriority()
+        self.log('Got candidate from {}'.format(target))
         self.mVoteLock.acquire()
-        if(height >= len(self.mVotes)):
-            self.mVoteLock.release()
-            return False
+        while(len(self.mVotes) <= height):
+            self.mVotes.append({})
         msg = self.mVotes[height].get(target)
-        self.mVoteLock.release()
         if(msg):
             if(msg.mView == self.mView):
                 self.mValue = msg.mVote
-                self.log('Got candidate from {}'.format(target))
-                return True
-        return False
+                self.mVoteLock.release()
+                return
+        self.mValue = '{}: {}, {}->{}'.format(self.mNodeID, self.mHeight, self.mView, target)
+        self.mVoteLock.release()
+        return
     # Check if Message is newer in terms of height and view.
     # Also make sure self.mVote has enough space for the message.
     def _isNewerMsg(self, msg): # acquires lock on mVote
@@ -97,10 +103,10 @@ class Node():
 
             # try to get a candidate if not
             if(self.mNoCandidate):
-                if(self._getCandidate(hasTimeout = False, height = self.mHeight)):
-                    self.mNoCandidate = False
-                    message = SCPMessage(self.mNodeID, self.mHeight, self.mView, self.mValue, self.mConn.getQuorum())
-                    self.broadcast(message)
+                self._getCandidate(hasTimeout = False, height = self.mHeight)
+                self.mNoCandidate = False
+                message = SCPMessage(self.mNodeID, self.mHeight, self.mView, self.mValue, self.mConn.getQuorum())
+                self.broadcast(message)
 
             if(not self.mTimer.fired()):
                 self.mVoteLock.acquire()
@@ -196,7 +202,7 @@ if __name__ == '__main__':
     import DelayStrat
     import ConnStrat
 
-    factory = NodeFactory.SimpleNodeFactory()
+    factory = NodeFactory.SimpleNodeFactory(time = 3)
     node = Node(factory, 0)
     factory.mConn.initWithPeers(set([node]), 0.8, 0.666)
     node.run()
