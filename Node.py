@@ -12,7 +12,7 @@ class Node():
     mVoteLock = Lock() # mutex lock for accessing mVotes
     # mVotes: List<map<nodeID, vote>>, dictionaries mapping nodeID to the vote with highest view indexed by height
     mVotes = [{}]
-    mValue = "" # The local candidate for current view
+    mValue = 0 # The local candidate(target) for current view
     mHeight = 0 # success count
     mBlocks = [] # success record
     _mEventDurationExpire = Event() # Event for ending the node(protocol)
@@ -60,7 +60,7 @@ class Node():
                 print('candidate releasing')
                 self.mVoteLock.release()
                 return
-        self.mValue = '{}: {}, {}->{}'.format(self.mNodeID, self.mHeight, self.mView, target)
+        self.mValue = target# '{}: {}, {}->{}'.format(self.mNodeID, self.mHeight, self.mView, target)
         print('candidate releasing')
         self.mVoteLock.release()
         return
@@ -77,6 +77,82 @@ class Node():
         if(history.mView < msg.mView):
             return True
         return False
+    """
+    INPUT:
+        map: nodeID-> newestVotes, topology
+        the starting nodeID for traversing, start
+    OUTPUT: nodeID of the target of the node start if
+        legal(on the same view) vote exists. -1
+        otherwise
+    """
+    def _goNext(self, topology, start):
+        ret = topology.get(start)
+        if(ret and ret.mView == self.mView):
+            return int(ret.mVote)
+        else:
+            return -1
+    """
+    INPUT:
+        map: nodeID-> newestVotes, topology
+        the starting nodeID for traversing, start
+    OUTPUT: NONE
+    Algorithm:
+        modify topology s.t. votes vote toward the
+        ultimate target(minimum nodeID if loop exists)
+    """
+    def _hareTortoise(self, topology, start):
+        # see if loop exists
+        tortoise = self._goNext(topology, start)
+        hare  = self._goNext(topology, self._goNext(topology, start))
+        hasLoop = True
+        while(tortoise != hare):
+            if(self._goNext(topology, tortoise) == -1):
+                hasLoop = False
+                break
+            tortoise = self._goNext(topology, tortoise)
+            hare  = self._goNext(topology, self._goNext(topology, hare))
+
+        target = tortoise
+        if(hasLoop):
+            # find the beginning of the loop, loopStart
+            loopStart = start
+            while(loopStart != tortoise):
+                tortoise = self._goNext(topology, tortoise)
+                loopStart = self._goNext(topology, loopStart)
+
+            # find the lowest target in the loop, target
+            newTortoise = self._goNext(topology, tortoise)
+            while(newTortoise != tortoise):
+                if(newTortoise < target):
+                    target = newTortoise
+                newTortoise = self._goNext(topology, tortoise)
+            # assign all the target to the final ones
+            newTortoise = start
+            while(newTortoise != loopStart):
+                topology[newTortoise].mVote = target
+                newTortoise = self._goNext(topology, newTortoise)
+        else:
+            # assign all the target to the final ones
+            newTortoise = start
+            while(newTortoise != tortoise):
+                if(newTortoise != self._goNext(topology, newTortoise)):
+                    topology[newTortoise].mVote = target
+                    newTortoise = self._goNext(topology, newTortoise)
+
+
+    def _modifyVotes(self):
+        self.mVoteLock.acquire()
+        # Nothing received to be modified
+        if(len(self.mVotes) < self.mHeight):
+            self.mVoteLock.release()
+            return
+        votes = self.mVotes[self.mHeight]
+        for nodeID in votes.keys():
+            self._hareTortoise(votes, nodeID)
+            # if(self._extractTarget(v.mVote) != v.mTarget):
+
+        self.mVoteLock.release()
+
     def run(self):
         # in case node ends before others
         sleep(0.1)
@@ -108,6 +184,10 @@ class Node():
                     self.mTimer.start()
                     break
 
+            # Modify mVotes according to target
+            # Only needed in this protocol
+            self._modifyVotes()
+            # Check if any message is ractified
             if(not self.mTimer.fired()):
                 self.mVoteLock.acquire()
                 while(len(self.mVotes) <= self.mHeight):
@@ -136,7 +216,7 @@ class Node():
         self.mFile.close()
         # print('\n### Node{} log:\n{}'.format(self.mNodeID, self.mLog))
     def recv(self, msg):
-        self.log('recvs from {}: {}'.format(msg.mSender, msg.mVote))
+        self.log('recvs from {}({}, {}) -> {}'.format(msg.mSender, msg.mHeight, msg.mView,  msg.mVote))
         if(self._isNewerMsg(msg)):
             self.mVotes[msg.mHeight][msg.mSender] = msg
     def log(self, output):
