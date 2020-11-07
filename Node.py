@@ -50,24 +50,25 @@ class Node():
         target = self._getPriority()
         self.log('Got candidate from {}'.format(target))
         self.mVoteLock.acquire()
-        print('candidate acquired')
+        # print('candidate acquired')
         while(len(self.mVotes) <= height):
             self.mVotes.append({})
         msg = self.mVotes[height].get(target)
         if(msg):
             if(msg.mView == self.mView):
                 self.mValue = msg.mVote
-                print('candidate releasing')
+                # print('candidate releasing')
                 self.mVoteLock.release()
                 return
         self.mValue = target# '{}: {}, {}->{}'.format(self.mNodeID, self.mHeight, self.mView, target)
-        print('candidate releasing')
+        # print('candidate releasing')
         self.mVoteLock.release()
         return
     # Check if Message is newer in terms of height and view.
     # Also make sure self.mVote has enough space for the message.
     def _isNewerMsg(self, msg): # acquires lock on mVote
         self.mVoteLock.acquire()
+        # print('newMsg acquired')
         while(len(self.mVotes) <= msg.mHeight):
             self.mVotes.append({})
         history = self.mVotes[msg.mHeight].get(msg.mSender)
@@ -101,9 +102,12 @@ class Node():
         ultimate target(minimum nodeID if loop exists)
     """
     def _hareTortoise(self, topology, start):
+        # print("beginning of hare tortoise")
         # see if loop exists
         tortoise = self._goNext(topology, start)
         hare  = self._goNext(topology, self._goNext(topology, start))
+        if(tortoise == -1):
+            return
         hasLoop = True
         while(tortoise != hare):
             if(self._goNext(topology, tortoise) == -1):
@@ -119,18 +123,24 @@ class Node():
             while(loopStart != tortoise):
                 tortoise = self._goNext(topology, tortoise)
                 loopStart = self._goNext(topology, loopStart)
-
             # find the lowest target in the loop, target
-            newTortoise = self._goNext(topology, tortoise)
-            while(newTortoise != tortoise):
-                if(newTortoise < target):
+            newTortoise = self._goNext(topology, loopStart)
+            while(newTortoise != loopStart):
+                if(topology[newTortoise].mVote < topology[target].mVote):
                     target = newTortoise
-                newTortoise = self._goNext(topology, tortoise)
+                newTortoise = self._goNext(topology, newTortoise)
             # assign all the target to the final ones
             newTortoise = start
             while(newTortoise != loopStart):
+                nextStep = self._goNext(topology, newTortoise)
                 topology[newTortoise].mVote = target
-                newTortoise = self._goNext(topology, newTortoise)
+                newTortoise = nextStep
+            topology[newTortoise].mVote = target
+            newTortoise = self._goNext(topology, newTortoise)
+            while(newTortoise != loopStart):
+                nextStep = self._goNext(topology, newTortoise)
+                topology[newTortoise].mVote = target
+                newTortoise = nextStep
         else:
             # assign all the target to the final ones
             newTortoise = start
@@ -138,10 +148,12 @@ class Node():
                 if(newTortoise != self._goNext(topology, newTortoise)):
                     topology[newTortoise].mVote = target
                     newTortoise = self._goNext(topology, newTortoise)
+        # print("ending of hare tortoise")
 
 
     def _modifyVotes(self):
         self.mVoteLock.acquire()
+        # print('modify acquired')
         # Nothing received to be modified
         if(len(self.mVotes) < self.mHeight):
             self.mVoteLock.release()
@@ -179,6 +191,7 @@ class Node():
                     self.log('catching up from {} to {}'.format(self.mHeight, h))
                     self.changeView(False)
                     self.mVoteLock.acquire()
+                    # print('VBlocking acquired')
                     self.mHeight = h
                     self.mVoteLock.release()
                     self.mTimer.start()
@@ -190,6 +203,7 @@ class Node():
             # Check if any message is ractified
             if(not self.mTimer.fired()):
                 self.mVoteLock.acquire()
+                # print('ractify acquired')
                 while(len(self.mVotes) <= self.mHeight):
                     self.mVotes.append({})
                 # TODO: patch ractify with new message formation(with target)
