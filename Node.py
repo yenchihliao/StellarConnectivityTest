@@ -4,10 +4,7 @@ from time import sleep
 # from AbstractNodeFactory import *
 from Message import SCPMessage
 
-# In charge of protocol itself
-# Network delay simulation, timeout strategy, and quorum(peers and trust)
-#       are delegated to other objects
-class Node():
+class AbstractNode():
     mView = 0
     mVoteLock = Lock() # mutex lock for accessing mVotes
     # mVotes: List<map<nodeID, vote>>, dictionaries mapping nodeID to the vote with highest view indexed by height
@@ -17,6 +14,32 @@ class Node():
     mBlocks = [] # success record
     _mEventDurationExpire = Event() # Event for ending the node(protocol)
     mLog = '' # Output string
+    def __init__(self):
+        pass
+    def _getPriority(self):
+        pass
+    def _getCandidate(self):
+        pass
+    def _isNewerMsg(self):
+        pass
+    def run(self):
+        pass
+    def log(self, output):
+        # print(output)
+        self.mLog += output
+        self.mLog += "\n"
+    def broadcast(self, msg):
+        self.mConn.broadcast(msg)
+    def changeView(self, hasTimeout):
+        pass
+"""
+Node is in charge of protocol itself.
+1. Network delay simulation, timeout strategy, and quorum(peers and trust)
+      are delegated to other objects
+2. The timer start right after viewChange happens.
+3. The candidate is randomly choosed within local slices.
+"""
+class Node(AbstractNode):
     def __init__(self, factory, nodeID):
         self.mNodeID = nodeID
         self.mFile = open('node{}.txt'.format(self.mNodeID), 'w')
@@ -233,12 +256,6 @@ class Node():
         self.log('recvs from {}({}, {}) -> {}'.format(msg.mSender, msg.mHeight, msg.mView,  msg.mVote))
         if(self._isNewerMsg(msg)):
             self.mVotes[msg.mHeight][msg.mSender] = msg
-    def log(self, output):
-        print(output)
-        self.mLog += output
-        self.mLog += "\n"
-    def broadcast(self, msg):
-        self.mConn.broadcast(msg)
     def changeView(self, hasTimeout):
         # self.log('calling view change @{}, hasTimeout: {}'.format(self.mView, hasTimeout))
         if(hasTimeout):
