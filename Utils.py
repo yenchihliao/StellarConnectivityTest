@@ -2,6 +2,7 @@ from Quorum import SCPQuorum
 import numpy as np
 from numpy import linalg as LA
 from copy import deepcopy
+import matplotlib.pyplot as plt
 
 
 def _LegalTransformation(M):
@@ -33,6 +34,8 @@ def PageRank(M, nodeCount, d = 0.85):
     # print(matrix)
     v = v[:, np.argmax(w)].real
     v /= sum(v) # 1-norm
+    plt.bar(np.arange(nodeCount), v)
+    plt.show()
     return v
 
 """
@@ -104,6 +107,8 @@ def NodeRank(quorum, nodeCount, d = 0.85):
                 NR[v] += PR[G] * _adopt(Q, v)
     NR /= sum(NR) # 1-norm
     print('NodeRank result:\n', NR)
+    plt.bar(np.arange(nodeCount), NR)
+    plt.show()
     return NR
 
 def QuorumIntersection(quorums):

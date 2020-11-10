@@ -89,18 +89,15 @@ class SCPQuorum(Quorum):
     # INPUT: prnt decides whether to print the outcome
     # OUTPUT: visualize the slicesSet.
     def show(self, prnt = False):
-        ret = ""
-        ret += "{"
+        ret = "{"
         for s in self.mSlices:
             if(type(s) == type(self)):
                 ret += s.show()
             else:
                 ret += str(s)
             ret += ", "
-        try:
+        if(len(ret) >= 3):
             ret = ret[:-2]
-        except:
-            pass
         ret += ("}" + str(self.mThreshold))
         if(prnt):
             print(ret)
