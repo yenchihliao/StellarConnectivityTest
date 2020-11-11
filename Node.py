@@ -189,8 +189,6 @@ class Node(AbstractNode):
         self.mVoteLock.release()
 
     def run(self):
-        # in case node ends before others
-        sleep(0.1)
         self.log('running Node{}'.format(self.mNodeID))
         # timer stop the node when expired.(Experiment duation)
         timer = Timer(self.mDuration, self._mEventDurationExpire.set)
