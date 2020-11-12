@@ -17,7 +17,7 @@ INPUT: Matrix M, M[i][j] > 0 if i trusts j, 0 otherwise.
        d as the damping factor in the PageRank
 OUTPUT: Vector V representing the PageRank in percentage. sum(V) = 1.
 """
-def PageRank(M, nodeCount, d = 0.85):
+def PageRank(M, nodeCount, d = 0.85, xAxis = 0, draw = True):
     print("doing PageRank with:")
     print(M)
     matrix = deepcopy(M)
@@ -34,8 +34,12 @@ def PageRank(M, nodeCount, d = 0.85):
     # print(matrix)
     v = v[:, np.argmax(w)].real
     v /= sum(v) # 1-norm
-    plt.bar(np.arange(nodeCount), v)
-    plt.show()
+    if(draw):
+        if(xAxis == 0):
+            xAxis = np.arange(nodeCount)
+        plt.bar(xAxis, v)
+        plt.xticks(rotation='vertical')
+        plt.show()
     return v
 
 """
@@ -92,23 +96,28 @@ INPUT: List of sliceSetting defined in Quorum.py.
        d represents the damping factor in PageRank
 OUTPUT: Vector V representing the NodeRank in percentage. sum(V) = 1
 """
-def NodeRank(quorum, nodeCount, d = 0.85):
+def NodeRank(quorum, nodeCount, d = 0.85, xAxis = 0, draw = True):
     print('doing NodeRank on')
     for i in range(nodeCount):
         quorum[i].show(True)
     NR = np.zeros(nodeCount)
-    PR = PageRank(_toMatrix(quorum), nodeCount, d)
-    print('PageRank result:')
-    print(PR)
+    PR = PageRank(_toMatrix(quorum), nodeCount, d, xAxis, draw)
+    # print('PageRank result: max=({}, {})'.format(np.argmax(PR), np.max(PR)))
+    # print(PR)
     for v in range(nodeCount): # Nodes v
         S = _slicesContaining(quorum, v)
         for Q in S: # Slice Q
             for G in Q.allMember(nodeCount): # Nodes G
                 NR[v] += PR[G] * _adopt(Q, v)
     NR /= sum(NR) # 1-norm
-    print('NodeRank result:\n', NR)
-    plt.bar(np.arange(nodeCount), NR)
-    plt.show()
+    # print('NodeRank result: max=({}, {})'.format(np.argmax(NR), np.max(NR)))
+    # print(NR)
+    if(draw):
+        if(xAxis == 0):
+            xAxis = np.arange(nodeCount)
+        plt.bar(xAxis, NR)
+        plt.xticks(rotation='vertical')
+        plt.show()
     return NR
 
 def QuorumIntersection(quorums):

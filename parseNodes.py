@@ -3,6 +3,9 @@ import json
 from time import sleep
 from Quorum import SCPQuorum
 import Utils
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 # r = requests.get("https://api.stellarbeat.io/v1/network/stellar-public")
 # nodes = r.json().get("nodes")
@@ -44,13 +47,37 @@ for node in nodes:
     hash2ID[node['publicKey']] = count
     count += 1
 # make instances of SCPQuroum
-Quorums = []
+quorums = []
+names = []
 for node in nodes:
     if(node['publicKey'] in removing):
         continue
-    quorum = quorumParser(node['quorumSet'])
+    if(node.get('name')):
+        names.append(node['name'])
+    else:
+        names.append(node.get('publicKey')[:4])
     # quorum.show(True)
-    Quorums.append(quorum)
+    quorums.append(quorumParser(node['quorumSet']))
 
 # Evaluate the system
-# Utils.NodeRank(Quorums, len(Quorums))
+PR = Utils.PageRank(Utils._toMatrix(quorums), len(quorums), xAxis = names, draw = False)
+NR = Utils.NodeRank(quorums, len(quorums), xAxis = names, draw = False)
+
+class Pair():
+    def __init__(self, name, rank):
+        self.mName = name
+        self.mRank = rank
+# Output the graph with sorted rank
+pairs = []
+for i in range(len(quorums)):
+    pairs.append((names[i], PR[i], NR[i]))
+pairs.sort(key=lambda tup: tup[2], reverse=True)
+for i in range(len(quorums)):
+    names[i] = pairs[i][0]
+    PR[i] = pairs[i][1]
+    NR[i] = pairs[i][2]
+l1, = plt.plot(names, PR, '*', linestyle='solid', label='PageRank')
+l2, = plt.plot(names, NR, '*', linestyle='solid', label='NodeRank')
+plt.legend(handles = [l1, l2])
+plt.xticks(rotation='vertical')
+plt.show()
