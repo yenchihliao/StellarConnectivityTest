@@ -74,15 +74,10 @@ class UniformConn(AbstractConn):
     def VBlocking(self, target, peers):
         return self.mQuorum[target].isBlockedBy(peers)
     """
-    INPUT: view, value, and votes which maps nodeID to their highest(view) vote.
-    OUTPUT: The set of nodeIDs ractifying value or False otherwise.
+    INPUT: agrees is a set of nodeIDs.
+    OUTPUT: The subset of agrees that forms a quorum
     """
-    def ractify(self, votes, view, value):
-        agrees = set()
-        values = deepcopy(votes).values()
-        for msg in values:
-            if(msg.mView == view and msg.mVote == value):
-                agrees.add(msg.mSender)
+    def ractify(self, agrees):
         changed = True
         while(changed):
             changed = False

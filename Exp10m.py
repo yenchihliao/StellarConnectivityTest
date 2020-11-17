@@ -18,7 +18,7 @@ if __name__ == '__main__':
     factory.createConn().initWithPeers(nodes, 1, 0.67)
 
     # Evaluate the NodeRank
-    Utils.NodeRank(nodes[0].mConn.getQuorum(), nodeCount)
+    Utils.NodeRank(nodes[0].mConn.getQuorum(), nodeCount, draw=False)
 
     # run the instances
     for node in nodes:

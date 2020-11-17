@@ -205,7 +205,7 @@ class Node(AbstractNode):
             # Skip heights when behind a v-blocking set
             peers = set()
             for h in range(len(self.mVotes)-1, self.mHeight, -1):
-                for peer in self.mVotes[h]:
+                for peer in self.mVotes[h]: # for dictionary keys, which is int(sender nodeID)
                     peers.add(peer)
                 if(self.mConn.VBlocking(self.mNodeID, peers)):
                     self.mTimer.cancel()
@@ -227,8 +227,11 @@ class Node(AbstractNode):
                 # print('ractify acquired')
                 while(len(self.mVotes) <= self.mHeight):
                     self.mVotes.append({})
-                # TODO: patch ractify with new message formation(with target)
-                tmp = self.mConn.ractify(self.mVotes[self.mHeight], self.mView, self.mValue)
+                agrees = set()
+                for msg in self.mVotes[self.mHeight].values():
+                    if(msg.mView == self.mView and msg.mVote == self.mValue):
+                        agrees.add(msg.mSender)
+                tmp = self.mConn.ractify(agrees)
                 self.mVoteLock.release()
                 if(tmp):
                     self.mTimer.cancel()
@@ -289,7 +292,11 @@ class NodeOneShot(Node):
             self.mVoteLock.acquire()
             while(len(self.mVotes) <= self.mHeight):
                 self.mVotes.append({})
-            tmp = self.mConn.ractify(self.mVotes[self.mHeight], self.mView, self.mValue)
+            agrees = set()
+            for msg in self.mVotes[self.mHeight].values():
+                if(msg.mView == self.mView and msg.mVote == self.mValue):
+                    agrees.add(msg.mSender)
+            tmp = self.mConn.ractify(agrees)
             if(tmp):
                 self.mTimer.cancel()
                 result = ''
