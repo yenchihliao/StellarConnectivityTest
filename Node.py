@@ -217,31 +217,28 @@ class Node(AbstractNode):
                     self.mVoteLock.release()
                     self.mTimer.start()
                     break
-
-            # Modify mVotes according to target
-            # Only needed in this protocol
-            self._modifyVotes()
             # Check if any message is ractified
             if(not self.mTimer.fired()):
-                self.mVoteLock.acquire()
-                # print('ractify acquired')
-                while(len(self.mVotes) <= self.mHeight):
-                    self.mVotes.append({})
-                agrees = set()
-                for msg in self.mVotes[self.mHeight].values():
-                    if(msg.mView == self.mView and msg.mVote == self.mValue):
-                        agrees.add(msg.mSender)
-                tmp = self.mConn.ractify(agrees)
-                self.mVoteLock.release()
-                if(tmp):
-                    self.mTimer.cancel()
-                    result = ''
-                    for e in tmp:
-                        result += str(e) + ', '
-                    self.log('Ractified: {} with {}'.format(self.mValue, result))
-                    self.changeView(hasTimeout=False)
-                    self.mTimer.start()
-                    continue
+                if(self.mHasNewMsg):
+                    self.mHasNewMsg = False
+                    self.mVoteLock.acquire()
+                    while(len(self.mVotes) <= self.mHeight):
+                        self.mVotes.append({})
+                    agrees = set()
+                    for msg in self.mVotes[self.mHeight].values():
+                        if(msg.mView == self.mView and msg.mVote == self.mValue):
+                            agrees.add(msg.mSender)
+                    tmp = self.mConn.ractify(agrees)
+                    self.mVoteLock.release()
+                    if(tmp):
+                        self.mTimer.cancel()
+                        result = ''
+                        for e in tmp:
+                            result += str(e) + ', '
+                        self.log('Ractified: {} with {}'.format(self.mValue, result))
+                        self.changeView(hasTimeout=False)
+                        self.mTimer.start()
+                        continue
             else:
                 self.log('timer fired')
                 self.changeView(hasTimeout=True)
@@ -257,6 +254,11 @@ class Node(AbstractNode):
         self.log('recvs from {}({}, {}) -> {}'.format(msg.mSender, msg.mHeight, msg.mView,  msg.mVote))
         if(self._isNewerMsg(msg)):
             self.mVotes[msg.mHeight][msg.mSender] = msg
+        # Modify mVotes according to target
+        # Only needed in this protocol
+        self._modifyVotes()
+        if(msg.mHeight == self.mHeight and msg.mView == self.mView):
+            self.mHasNewMsg = True
     def changeView(self, hasTimeout):
         # self.log('calling view change @{}, hasTimeout: {}'.format(self.mView, hasTimeout))
         if(hasTimeout):
@@ -289,26 +291,28 @@ class NodeOneShot(Node):
                 else:
                     continue
 
-            self.mVoteLock.acquire()
-            while(len(self.mVotes) <= self.mHeight):
-                self.mVotes.append({})
-            agrees = set()
-            for msg in self.mVotes[self.mHeight].values():
-                if(msg.mView == self.mView and msg.mVote == self.mValue):
-                    agrees.add(msg.mSender)
-            tmp = self.mConn.ractify(agrees)
-            if(tmp):
-                self.mTimer.cancel()
-                result = ''
-                for e in tmp:
-                    result += str(e) + ', '
-                self.log('Ractified: {} with {}'.format(self.mValue, result))
+            if(self.mHasNewMsg):
+                self.mHasNewMsg = False
+                self.mVoteLock.acquire()
+                while(len(self.mVotes) <= self.mHeight):
+                    self.mVotes.append({})
+                agrees = set()
+                for msg in self.mVotes[self.mHeight].values():
+                    if(msg.mView == self.mView and msg.mVote == self.mValue):
+                        agrees.add(msg.mSender)
+                tmp = self.mConn.ractify(agrees)
+                if(tmp):
+                    self.mTimer.cancel()
+                    result = ''
+                    for e in tmp:
+                        result += str(e) + ', '
+                    self.log('Ractified: {} with {}'.format(self.mValue, result))
+                    self.mVoteLock.release()
+                    self.mRecord()
+                    self.mFile.write(self.mLog)
+                    print(self.mLog)
+                    return
                 self.mVoteLock.release()
-                self.mRecord()
-                self.mFile.write(self.mLog)
-                print(self.mLog)
-                return
-            self.mVoteLock.release()
         self.log('timer fired')
         print(self.mLog)
         # print('\n### Node{} log:\n{}'.format(self.mNodeID, self.mLog))
