@@ -178,7 +178,7 @@ class Node(AbstractNode):
         self.mVoteLock.acquire()
         # print('modify acquired')
         # Nothing received to be modified
-        if(len(self.mVotes) < self.mHeight):
+        if(len(self.mVotes) <= self.mHeight):
             self.mVoteLock.release()
             return
         votes = self.mVotes[self.mHeight]
@@ -191,8 +191,8 @@ class Node(AbstractNode):
     def run(self):
         self.log('running Node{}'.format(self.mNodeID))
         # timer stop the node when expired.(Experiment duation)
-        timer = Timer(self.mDuration, self._mEventDurationExpire.set)
-        timer.start()
+        # timer = Timer(self.mDuration, self._mEventDurationExpire.set)
+        # timer.start()
         # mTimer triggers view change when expired.
         # The timing of starting this timer depends on the protocol.
         self._getCandidate(hasTimeout = False, height = self.mHeight)
@@ -201,7 +201,8 @@ class Node(AbstractNode):
         self.mTimer.set(hasTimeout=False)
         self.mTimer.start()
         failCount = 0
-        while(not self._mEventDurationExpire.is_set()):
+        # while(not self._mEventDurationExpire.is_set()):
+        while(self.mHeight < self.mDuration):
             # Skip heights when behind a v-blocking set
             peers = set()
             for h in range(len(self.mVotes)-1, self.mHeight, -1):
@@ -212,7 +213,7 @@ class Node(AbstractNode):
                     self.log('catching up from {} to {}'.format(self.mHeight, h))
                     self.changeView(False)
                     self.mVoteLock.acquire()
-                    # print('VBlocking acquired')
+                    print('jump to {}'.format(h))
                     self.mHeight = h
                     self.mVoteLock.release()
                     self.mTimer.start()

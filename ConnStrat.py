@@ -23,7 +23,7 @@ class AbstractConn():
         pass
     def VBlocking(self):
         pass
-    def ractify(self, votes, view, value):
+    def ractify(self, agrees):
         pass
     def getQuorum(self):
         return self.mQuorum

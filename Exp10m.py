@@ -9,7 +9,7 @@ import Utils
 if __name__ == '__main__':
     # Experiment parameters
     nodeCount = 4
-    factory = SimpleNodeFactory(time = 30)
+    factory = SimpleNodeFactory(time = 100, timeoutGap = 0)
 
     # Instantiate instances with parameters
     nodes = []
