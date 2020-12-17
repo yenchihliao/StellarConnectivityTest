@@ -8,7 +8,7 @@ import Utils
 import random
 import math
 import matplotlib.pyplot as plt
-from simpleTest import getPriority
+from oneShot import getPriority
 
 """
 INPUT:

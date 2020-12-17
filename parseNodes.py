@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-# r = requests.get("https://api.stellarbeat.io/v1/network/stellar-public")
-# nodes = r.json().get("nodes")
-f = open('stellar-public', 'r')
-r = json.load(f)
-nodes = r.get("nodes")
+r = requests.get("https://api.stellarbeat.io/v1/network/stellar-public")
+nodes = r.json().get("nodes")
+# f = open('stellar-public', 'r')
+# r = json.load(f)
+# nodes = r.get("nodes")
 hash2ID = {}
 def quorumParser(rawSlices):
     slices = set()
