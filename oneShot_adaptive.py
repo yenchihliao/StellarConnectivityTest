@@ -7,7 +7,6 @@ from Quorum import SCPQuorum
 import Utils
 import random
 import math
-import matplotlib.pyplot as plt
 
 def getPriority(nodeID, quorums):
     vec = quorums[nodeID].toVector(len(quorums))
@@ -28,11 +27,11 @@ def setSet(nodes, node, setID):
         nodes[node] = setSet(nodes, setID, nodes[setID])
     return nodes[node]
 
-def runUtilHeight(targetHeight, minNode, maxNode, faultyRate):
+def runUtilHeight(targetHeight, minNode, maxNode, gap = 1, faultyRate = 0):
     print('faulty rate of {}'.format(faultyRate))
     y = []
     # conduct experiment with 4~100 nodes
-    for NODE_COUNT in range(minNode, maxNode, 3):
+    for NODE_COUNT in range(minNode, maxNode, 3*gap):
         factory = SimpleNodeFactory(time = 100, timeoutGap = 0)
         # TODO: is this a python "bug" that reusing a existing class instead of reallocating? (mConn)
         factory.mConn.mQuorum = []
@@ -59,7 +58,7 @@ def runUtilHeight(targetHeight, minNode, maxNode, faultyRate):
             # print(nodes)
             # print(targets)
             suc = False
-            for i in len(counts-1):
+            for i in range(len(counts)-1):
                 if(counts[i] > math.floor(NODE_COUNT * 0.67)):
                     suc = True
             if(suc):
@@ -75,11 +74,5 @@ if __name__ == '__main__':
     maxNode = 85
     rets = []
     for faultyRate in range(5, 33, 6):
-        print('hello?')
         rets.append(runUtilHeight(targetHeight, minNode, maxNode, faultyRate))
     print(rets)
-    x = np.arange(minNode, maxNode, 3)
-    for y in rets:
-        plt.plot(x, y)
-    plt.show()
-

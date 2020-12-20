@@ -7,7 +7,7 @@ from Quorum import SCPQuorum
 # import ..Utils
 import random
 import math
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from oneShot import getPriority
 
 """
@@ -29,11 +29,11 @@ def findSupport(viewTargets, nodes, supported, count = 0):
                 nodes[i] = 1
                 findSupport(viewTargets, nodes, i, count+1)
 
-def runUtilHeight(targetHeight, minNode, maxNode, faultyRate):
+def runUtilHeight(targetHeight, minNode, maxNode, gap = 1, faultyRate = 0):
     print('faulty rate of {}'.format(faultyRate))
     y = [] # collects results for plots
     # conduct experiment with 4~100 nodes
-    for NODE_COUNT in range(minNode, maxNode, 3):
+    for NODE_COUNT in range(minNode, maxNode, 3 * gap):
         # making node instances
         factory = SimpleNodeFactory(time = 100, timeoutGap = 0)
         # TODO: is this a python "bug" that reusing a existing class instead of reallocating? (mConn)
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     for faultyRate in range(5, 33, 6):
         rets.append(runUtilHeight(targetHeight, minNode, maxNode, faultyRate))
     print(rets)
-    x = np.arange(minNode, maxNode, 3)
-    for y in rets:
-        plt.plot(x, y)
-    plt.show()
+    # x = np.arange(minNode, maxNode, 3)
+    # for y in rets:
+    #     plt.plot(x, y)
+    # plt.show()

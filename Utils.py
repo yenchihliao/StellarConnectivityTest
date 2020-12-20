@@ -2,7 +2,7 @@ from Quorum import SCPQuorum
 import numpy as np
 from numpy import linalg as LA
 from copy import deepcopy
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def _LegalTransformation(M):
@@ -115,9 +115,9 @@ def NodeRank(quorum, nodeCount, d = 0.85, xAxis = 0, draw = True):
     if(draw):
         if(xAxis == 0):
             xAxis = np.arange(nodeCount)
-        plt.bar(xAxis, NR)
-        plt.xticks(rotation='vertical')
-        plt.show()
+        # plt.bar(xAxis, NR)
+        # plt.xticks(rotation='vertical')
+        # plt.show()
     return NR
 
 def QuorumIntersection(quorums):
