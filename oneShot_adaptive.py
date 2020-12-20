@@ -21,15 +21,18 @@ def getPriority(nodeID, quorums):
     return len(vec)-1
 
 def setSet(nodes, node, setID):
+    if(setID == len(nodes)):
+        nodes[node] = len(nodes)
+        return nodes[node]
     if(node != setID):
         nodes[node] = setSet(nodes, setID, nodes[setID])
     return nodes[node]
 
-if __name__ == '__main__':
-    targetHeight = 10000
+def runUtilHeight(targetHeight, minNode, maxNode, faultyRate):
+    print('faulty rate of {}'.format(faultyRate))
     y = []
     # conduct experiment with 4~100 nodes
-    for NODE_COUNT in range(4, 100, 3):
+    for NODE_COUNT in range(minNode, maxNode, 3):
         factory = SimpleNodeFactory(time = 100, timeoutGap = 0)
         # TODO: is this a python "bug" that reusing a existing class instead of reallocating? (mConn)
         factory.mConn.mQuorum = []
@@ -47,23 +50,36 @@ if __name__ == '__main__':
             targets = np.zeros(NODE_COUNT)
             for i in range(NODE_COUNT):
                 targets[i] = getPriority(i, quorums)
+                if(i < math.floor(NODE_COUNT * faultyRate /100)):
+                    targets[i] = NODE_COUNT
                 setSet(nodes, i, int(targets[i]))
-            counts = np.zeros(NODE_COUNT)
+            counts = np.zeros(NODE_COUNT+1)
             for i in range(NODE_COUNT):
                 counts[setSet(nodes, i, int(nodes[i]))] += 1
             # print(nodes)
             # print(targets)
             suc = False
-            for count in counts:
-                if(count > math.floor(NODE_COUNT * 0.67)):
+            for i in len(counts-1):
+                if(counts[i] > math.floor(NODE_COUNT * 0.67)):
                     suc = True
             if(suc):
                 height += 1
             else:
                 fail += 1
         y.append(fail)
-        print(height, fail)
-    x = np.arange(4, 100, 3)
-    print(y)
-    plt.plot(x, y)
+        print(NODE_COUNT, fail)
+    return y
+if __name__ == '__main__':
+    targetHeight = 10000
+    minNode = 48
+    maxNode = 85
+    rets = []
+    for faultyRate in range(5, 33, 6):
+        print('hello?')
+        rets.append(runUtilHeight(targetHeight, minNode, maxNode, faultyRate))
+    print(rets)
+    x = np.arange(minNode, maxNode, 3)
+    for y in rets:
+        plt.plot(x, y)
     plt.show()
+
