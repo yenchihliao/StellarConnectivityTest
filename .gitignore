@@ -4,3 +4,4 @@ Session.vim
 __pycache__
 Untitled.ipynb
 .ipynb_checkpoints
+node*.txt

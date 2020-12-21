@@ -30,7 +30,7 @@ def findSupport(viewTargets, nodes, supported, count = 0):
                 findSupport(viewTargets, nodes, i, count+1)
 
 def runUtilHeight(targetHeight, minNode, maxNode, gap = 1, faultyRate = 0):
-    print('faulty rate of {}'.format(faultyRate))
+    # print('faulty rate of {}'.format(faultyRate))
     y = [] # collects results for plots
     # conduct experiment with 4~100 nodes
     for NODE_COUNT in range(minNode, maxNode, 3 * gap):
@@ -77,7 +77,7 @@ def runUtilHeight(targetHeight, minNode, maxNode, gap = 1, faultyRate = 0):
                 else:
                     fail += 1
         y.append(fail)
-        print(NODE_COUNT, fail)
+        print('C:', NODE_COUNT, fail)
     return y
 
 if __name__ == '__main__':
