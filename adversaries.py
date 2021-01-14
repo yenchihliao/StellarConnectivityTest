@@ -5,32 +5,27 @@ import oneShot_adaptive, combine_adaptive
 if __name__ == '__main__':
     targetHeight = 10000
     maxNode = 85
-    limit = 50 # the maximum trails before finding the intersection
-    faultyRate = int(sys.argv[1])
+    faultyRate = float(sys.argv[1])
+    # set the iteration
     if(faultyRate == 0):
-        gap = 1
+        iteration = 27
+    elif(faultyRate == 2.5):
+        iteration = 4
+    elif(faultyRate == 5):
+        iteration = 8
+    elif(faultyRate == 10):
+        iteration = 16
+    elif(faultyRate == 12.5):
+        iteration = 8
+    elif(faultyRate > 13):
+        iteration = 5
     else:
-        gap = math.ceil(math.ceil(100/faultyRate) / 3)
-    minNode = max(4, gap * 3)
-    print('minNode = {}'.format(minNode))
+        iteration = 7
 
-    ret1 = []
-    ret2 = []
-    while(limit > 0):
-        limit -= 1
-        ret1.append(oneShot_adaptive.runUtilHeight(targetHeight, minNode, minNode+1, gap, faultyRate))
-        ret2.append(combine_adaptive.runUtilHeight(targetHeight, minNode, minNode+1, gap, faultyRate))
-        minNode += (gap * 3)
-        if(ret1[-1] > ret2[-1]):
-            break
-    while(limit > 45):
-        limit -= 1
-        ret1.append(oneShot_adaptive.runUtilHeight(targetHeight, minNode, minNode+1, gap, faultyRate))
-        ret2.append(combine_adaptive.runUtilHeight(targetHeight, minNode, minNode+1, gap, faultyRate))
-        minNode += (gap * 3)
-    ret1.append(oneShot_adaptive.runUtilHeight(targetHeight, minNode, minNode+1, gap, faultyRate))
-    ret2.append(combine_adaptive.runUtilHeight(targetHeight, minNode, minNode+1, gap, faultyRate))
-    print('faulty rate of {} with {} gap yeild:'.format(faultyRate, gap))
+    ret1 = oneShot_adaptive.runUtilHeight(targetHeight, faultyRate, iteration)
+    ret2 = combine_adaptive.runUtilHeight(targetHeight, faultyRate, iteration)
+
+    print('faulty rate of {}:'.format(faultyRate))
     print(ret1, ret2)
     # maxNode = max(85, gap*5)
     # rets = []

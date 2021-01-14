@@ -42,7 +42,7 @@ Node is in charge of protocol itself.
 class Node(AbstractNode):
     def __init__(self, factory, nodeID):
         self.mNodeID = nodeID
-        self.mFile = open('node{}.txt'.format(self.mNodeID), 'w')
+        # self.mFile = open('node{}.txt'.format(self.mNodeID), 'w')
         self.mFactory = factory
         self.mTimer = self.mFactory.createTimer()
         self.mConn = self.mFactory.createConn()
@@ -248,8 +248,8 @@ class Node(AbstractNode):
         self.log('Node{} duration expired'.format(self.mNodeID))
         self.log('{}:{}'.format(failCount, self.mHeight))
         # print(self.mLog)
-        self.mFile.write(self.mLog)
-        self.mFile.close()
+        # self.mFile.write(self.mLog)
+        # self.mFile.close()
         # print('\n### Node{} log:\n{}'.format(self.mNodeID, self.mLog))
     def recv(self, msg):
         self.log('recvs from {}({}, {}) -> {}'.format(msg.mSender, msg.mHeight, msg.mView,  msg.mVote))
@@ -310,7 +310,7 @@ class NodeOneShot(Node):
                     self.log('Ractified: {} with {}'.format(self.mValue, result))
                     self.mVoteLock.release()
                     self.mRecord()
-                    self.mFile.write(self.mLog)
+                    # self.mFile.write(self.mLog)
                     print(self.mLog)
                     return
                 self.mVoteLock.release()

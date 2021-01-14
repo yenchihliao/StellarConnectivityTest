@@ -29,11 +29,17 @@ def findSupport(viewTargets, nodes, supported, count = 0):
                 nodes[i] = 1
                 findSupport(viewTargets, nodes, i, count+1)
 
-def runUtilHeight(targetHeight, minNode, maxNode, gap = 1, faultyRate = 0):
+def runUtilHeight(targetHeight, faultyRate, iteration):
     # print('faulty rate of {}'.format(faultyRate))
     y = [] # collects results for plots
     # conduct experiment with 4~100 nodes
-    for NODE_COUNT in range(minNode, maxNode, 3 * gap):
+    for faultyNode in range(1, iteration + 1):
+        if(faultyRate == 0):
+            NODE_COUNT = 4 + (faultyNode - 1) * 6 + 1
+        else:
+            NODE_COUNT = math.ceil(faultyNode * 100 / faultyRate)
+        if(NODE_COUNT > 200):
+            return y
         # making node instances
         factory = SimpleNodeFactory(time = 100, timeoutGap = 0)
         # TODO: is this a python "bug" that reusing a existing class instead of reallocating? (mConn)
