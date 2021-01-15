@@ -27,15 +27,15 @@ def setSet(nodes, node, setID):
         nodes[node] = setSet(nodes, setID, nodes[setID])
     return nodes[node]
 
-def runUtilHeight(targetHeight, faultyRate, iteration):
+def runUtilHeight(targetHeight, invFaultyRate, iteration):
     # print('faulty rate of {}'.format(faultyRate))
     y = []
     # conduct experiment with 4~100 nodes
     for faultyNode in range(1, iteration+1):
-        if(faultyRate == 0):
-            NODE_COUNT = 4 + (faultyNode - 1) * 6 + 1
+        if(invFaultyRate == 0):
+            NODE_COUNT = 3 + (faultyNode - 1) * 6 + 1
         else:
-            NODE_COUNT = math.ceil(faultyNode * 100 / faultyRate)
+            NODE_COUNT = int(invFaultyRate * faultyNode)
         if(NODE_COUNT > 200):
             return y
         factory = SimpleNodeFactory(time = 100, timeoutGap = 0)
@@ -55,8 +55,9 @@ def runUtilHeight(targetHeight, faultyRate, iteration):
             targets = np.zeros(NODE_COUNT)
             for i in range(NODE_COUNT):
                 targets[i] = getPriority(i, quorums)
-                if(i < math.floor(NODE_COUNT * faultyRate /100)):
-                    targets[i] = NODE_COUNT
+                if(invFaultyRate != 0):
+                    if(i < math.floor(NODE_COUNT / invFaultyRate)):
+                        targets[i] = NODE_COUNT
                 setSet(nodes, i, int(targets[i]))
             counts = np.zeros(NODE_COUNT+1)
             for i in range(NODE_COUNT):
